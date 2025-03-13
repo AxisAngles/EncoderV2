@@ -29,7 +29,7 @@ end
 
 function Writer.new()
 	local self = setmetatable({}, Writer)
-	self.len = 0
+	self._totalLen = 0
 
 	self._buffs = {}
 	self._buff = buffer.create(1)
@@ -41,12 +41,16 @@ function Writer.new()
 end
 
 function Writer:__tostring()
-	return "BitWriter(" .. self.len .. "): " .. self._origin
+	return "BitWriter(" .. self._totalLen .. "): " .. self._origin
+end
+
+function Writer:getHead()
+	return self._totalLen
 end
 
 function Reader.new(buff)
 	local self = setmetatable({}, Reader)
-	self.len = 8*buffer.len(buff)
+	self._totalLen = 8*buffer.len(buff)
 
 	self._buff = buff
 	self._head = 0
@@ -56,7 +60,11 @@ function Reader.new(buff)
 end
 
 function Reader:__tostring()
-	return "BitReader(" .. self._head .. "/" .. self.len .. "): " .. self._origin
+	return "BitReader(" .. self._head .. "/" .. self._totalLen .. "): " .. self._origin
+end
+
+function Reader:getHead()
+	return self._head
 end
 
 
@@ -75,7 +83,7 @@ function Writer:write(bits, code)
 	-- 	n //= 2
 	-- end
 	-- print(str)
-	self.len += bits
+	self._totalLen += bits
 
 	while self._head + bits > self._len do
 		local rem = self._len - self._head
@@ -98,7 +106,7 @@ function Writer:write(bits, code)
 end
 
 function Writer:dump()
-	local length = -(-self.len//8)
+	local length = -(-self._totalLen//8)
 
 	local dumpBuff = buffer.create(length)
 	local head = 0
