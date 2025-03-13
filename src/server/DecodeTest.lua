@@ -1,4 +1,5 @@
 local EncoderFuncs = require("./EncoderFuncs")
+local BitBuffer = require("./BitBuffer")
 
 local Decoder = {}
 Decoder.__index = Decoder

@@ -1,10 +1,14 @@
 local EncoderFuncs = require("./EncoderFuncs")
+local BitBuffer = require("./BitBuffer")
 
 local Encoder = {}
 Encoder.__index = Encoder
 
 function Encoder.new(buff)
 	local self = setmetatable({}, Encoder)
+	--self._writer = BitBuffer.Writer.new()
+
+	--print(self._referenceWriter)
 
 	self._mode = "write" -- "count" or "write"
 	self._count = 0
@@ -46,6 +50,8 @@ function Encoder:_collectValues(value)
 	-- hashToNodeList
 	-- node list contains all values of a certain type which hash to the same value
 
+	local writer = BitBuffer.Writer.new()
+
 	local valueToNode = {}
 	local function recurse(value)
 		if valueToNode[value] then
@@ -84,16 +90,15 @@ function Encoder:_collectValues(value)
 			node.listCount = listCount
 			node.hashCount = hashCount
 		else
-			EncoderFuncs.encode(self, type, value)
-			node.cost = self:_readCount()
+			node.orig = writer:getHead()
+			EncoderFuncs.encode(writer, type, value)
+			node.cost = writer:getHead() - node.orig
 		end
 	end
 
-	self:_setCountMode()
 	recurse(value)
-	self:_setWriteMode()
 
-	--return nodes
+	self._literalDataBuff = writer:dump()
 	self._valueToNode = valueToNode
 end
 
@@ -299,6 +304,16 @@ function Encoder:_encodeTypeTree(node)
 	end
 end
 
+function Encoder:writeBufferBits(buff, orig, bits)
+	while bits >= 32 do
+		self:write(32, buffer.readbits(buff, orig, 32))
+		orig += 32
+		bits -= 32
+	end
+
+	self:write(bits, buffer.readbits(buff, orig, bits))
+end
+
 function Encoder:_encodeValueTree(node, code)
 	code = code or ""
 	if node.node0 then
@@ -318,7 +333,7 @@ function Encoder:_encodeValueTree(node, code)
 		elseif type == "table" then
 			-- nothing
 		else
-			EncoderFuncs.encode(self, type, value)
+			self:writeBufferBits(self._literalDataBuff, node.orig, node.cost)
 		end
 	end
 end
@@ -349,7 +364,8 @@ function Encoder:_encodeValue(value)
 		if type == "table" then
 			self:_encodeTable(valueNode)
 		else
-			EncoderFuncs.encode(self, type, value)
+			self:writeBufferBits(self._literalDataBuff, valueNode.orig, valueNode.cost)
+			--EncoderFuncs.encode(self, type, value)
 		end
 	end
 end
@@ -529,7 +545,7 @@ local decoder = Decoder.new(data)
 local value = decoder:decode()
 
 
---print(unpack(value[value]))
+print(unpack(value[value]))
 
 
 
