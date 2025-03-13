@@ -6,21 +6,11 @@ Encoder.__index = Encoder
 
 function Encoder.new(buff)
 	local self = setmetatable({}, Encoder)
-	--self._writer = BitBuffer.Writer.new()
-
-	--print(self._referenceWriter)
-
-	self._mode = "write" -- "count" or "write"
-	self._count = 0
-
-	self._buffs = {}
-	self._buff = buffer.create(1)
-	self._head = 0
-	self._len = 8*buffer.len(self._buff)
+	self._writer = BitBuffer.Writer.new()
 	
 	self._tableEncoded = {}
 
-	self:writeFib(1) -- version
+	self._writer:writeFib(1) -- version
 
 	return self
 end
@@ -42,6 +32,10 @@ function Encoder:encode(value)
 	self:_encodeValue(value)
 end
 
+function Encoder:dump()
+	return self._writer:dump()
+end
+
 -- eventually this can deduplicate actually
 function Encoder:_collectValues(value)
 	-- maybe this should make a counter class instead
@@ -59,7 +53,7 @@ function Encoder:_collectValues(value)
 			return
 		end
 
-		local type = EncoderFuncs.subtypeof(self, value)
+		local type = EncoderFuncs.subtypeof(writer, value)
 
 		local node = {
 			type = type;
@@ -290,50 +284,40 @@ end
 -- yeah maybe this is fine
 function Encoder:_encodeTypeTree(node)
 	if node.node0 then -- it's a branch
-		self:write(1, 0)
+		self._writer:write(1, 0)
 		--print(0)
 		self:_encodeTypeTree(node.node0)
 		self:_encodeTypeTree(node.node1)
 	else
-		self:write(1, 1)
+		self._writer:write(1, 1)
 		--print(1)
 		--print("encoding", #node.value, node.value)
-		self:writeFib(#node.value)
-		self:writeString(node.value)
+		self._writer:writeFib(#node.value)
+		self._writer:writeString(node.value)
 		--encodeNode(self, node)
 	end
-end
-
-function Encoder:writeBufferBits(buff, orig, bits)
-	while bits >= 32 do
-		self:write(32, buffer.readbits(buff, orig, 32))
-		orig += 32
-		bits -= 32
-	end
-
-	self:write(bits, buffer.readbits(buff, orig, bits))
 end
 
 function Encoder:_encodeValueTree(node, code)
 	code = code or ""
 	if node.node0 then
-		self:write(1, 0)
+		self._writer:write(1, 0)
 		self:_encodeValueTree(node.node0, code .. "0")
 		self:_encodeValueTree(node.node1, code .. "1")
 	else
-		self:write(1, 1)
+		self._writer:write(1, 1)
 		local type = node.type
 		local value = node.value
 		--print("encoding", type, value, code)
 		local typeNode = self._typeToNode[type]
-		local success = self:writeCode(self._typeTree, typeNode)
+		local success = self._writer:writeCode(self._typeTree, typeNode)
 		if type == "_type" then
 			local literalNode = self._typeToNode[value]
-			local success = self:writeCode(self._typeTree, literalNode)
+			local success = self._writer:writeCode(self._typeTree, literalNode)
 		elseif type == "table" then
 			-- nothing
 		else
-			self:writeBufferBits(self._literalDataBuff, node.orig, node.cost)
+			self._writer:writeBufferBits(self._literalDataBuff, node.orig, node.cost)
 		end
 	end
 end
@@ -350,7 +334,7 @@ end
 
 function Encoder:_encodeValue(value)
 	local valueNode = self._valueToNode[value]
-	local written = self:writeCode(self._valueTree, valueNode)
+	local written = self._writer:writeCode(self._valueTree, valueNode)
 	local type = valueNode.type
 
 	if written then
@@ -360,11 +344,11 @@ function Encoder:_encodeValue(value)
 	else
 		local value = valueNode.value
 		local literalNode = self._literalToNode[type]
-		self:writeCode(self._valueTree, literalNode)
+		self._writer:writeCode(self._valueTree, literalNode)
 		if type == "table" then
 			self:_encodeTable(valueNode)
 		else
-			self:writeBufferBits(self._literalDataBuff, valueNode.orig, valueNode.cost)
+			self._writer:writeBufferBits(self._literalDataBuff, valueNode.orig, valueNode.cost)
 			--EncoderFuncs.encode(self, type, value)
 		end
 	end
@@ -378,8 +362,8 @@ function Encoder:_encodeTable(tabNode)
 	tabNode.encoded = true
 
 	--print("writing listCount", tabNode.listCount + 1)
-	self:writeFib(tabNode.listCount + 1)
-	self:writeFib(tabNode.hashCount + 1)
+	self._writer:writeFib(tabNode.listCount + 1)
+	self._writer:writeFib(tabNode.hashCount + 1)
 
 	-- now encode for real
 	local nextIndex = 1
@@ -401,131 +385,7 @@ end
 
 
 
-function Encoder:_readCount()
-	local count = self._count
-	self._count = 0
-	return count
-end
 
-function Encoder:_setCountMode()
-	self._mode = "count"
-end
-
-function Encoder:_setWriteMode()
-	self._mode = "write"
-end
-
-function Encoder:write(bits, code)
-	if self._mode == "count" then
-		self._count += bits
-		return
-	end
-
-	-- local str = ""
-	-- local n = code
-	-- for i = 1, bits do
-	-- 	str ..= n%2
-	-- 	n //= 2
-	-- end
-	-- print(str)
-
-	while self._head + bits > self._len do
-		local rem = self._len - self._head
-		local pow = 2^rem
-
-		buffer.writebits(self._buff, self._head, rem, code%pow)
-
-		bits  -= rem
-		code //= pow
-
-		table.insert(self._buffs, self._buff)
-
-		self._len *= 2
-		self._head = 0
-		self._buff = buffer.create(self._len/8)
-	end
-
-	buffer.writebits(self._buff, self._head, bits, code)
-	self._head += bits
-end
-
-function Encoder:dump()
-	local length = 0
-	for i, buff in self._buffs do
-		length += buffer.len(buff)
-	end
-
-	length += -(-self._head//8)
-
-	local dumpBuff = buffer.create(length)
-	local head = 0
-	for i, buff in self._buffs do
-		buffer.copy(dumpBuff, head, buff)
-		head += buffer.len(buff)
-	end
-
-	buffer.copy(dumpBuff, head, self._buff, 0, -(-self._head//8))
-
-	return dumpBuff
-end
-
--- built-in decode functionality
-
-local fibSeq = {}
-local a0, a1 = 1, 1
-
-for i = 1, 32 do
-	a0, a1 = a1, a0 + a1
-	fibSeq[i] = a0
-end
-
-Encoder.maxFib = a1 - 1
-
-function Encoder:writeFib(n)
-	local c
-	for i, f in next, fibSeq do
-		if f > n then
-			c = i - 1
-			break
-		end
-	end
-
-	if not c then
-		error(n .. " is too large to be fib encoded")
-	end
-
-	local code = 0
-	for i = c, 1, -1 do
-		local f = fibSeq[i]
-		if n >= f then
-			code = 2*code + 1
-			n -= f
-		else
-			code = 2*code + 0
-		end
-	end
-
-	self:write(c, code)
-	self:write(1, 1)
-end
-
-function Encoder:writeString(value)
-	local len = #value
-	for i = 1, len do
-		self:write(8, string.byte(value, i))
-	end
-end
-
-function Encoder:writeCode(tree, node)
-	local bits = tree.leafToBits[node]
-	local code = tree.leafToCode[node]
-	if bits then
-		self:write(bits, code)
-		return true
-	else
-		return false
-	end
-end
 
 
 

@@ -142,6 +142,26 @@ end
 
 
 
+-- write buffer bits
+function Writer:writeBufferBits(buff, orig, bits)
+	while bits >= 32 do
+		self:write(32, buffer.readbits(buff, orig, 32))
+		orig += 32
+		bits -= 32
+	end
+
+	self:write(bits, buffer.readbits(buff, orig, bits))
+end
+
+-- TODO: implement Reader:readBufferBits for consistency
+
+
+
+
+
+
+
+
 -- Fibonacci positive integer coding
 local fibSeq = {}
 local a0, a1 = 1, 1
