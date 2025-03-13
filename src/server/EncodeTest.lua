@@ -53,9 +53,7 @@ function Encoder:_collectValues(value)
 			return
 		end
 
-		--print("typing", value)
 		local type = EncoderFuncs.subtypeof(self, value)
-		--print(type, value)
 
 		local node = {
 			type = type;
@@ -174,17 +172,8 @@ function Encoder:_createValueLeaves()
 		end
 	until not changed
 
-	--print("chec")
-	-- for i, node in valueLeaves do
-	-- 	print("node", i, node)
-	-- 	print(node.type)
-	-- 	print(node.value)
-	-- 	print(node.freq)
-	-- end
-
 	self._literalToNode = literalToNode
 	self._valueLeaves = valueLeaves
-	--return valueLeaves
 end
 
 function Encoder:_collectTypes()
@@ -267,18 +256,15 @@ local function buildTree(leaves)
 	local leafToCode = {}
 
 	local function recurse(node, bits, code, c)
-		--print(node.type, node.value, node.node0, node.node1)
 		if node.node0 then
 			recurse(node.node0, bits + 1, code + 0*c, 2*c)
 			recurse(node.node1, bits + 1, code + 1*c, 2*c)
 		else
 			leafToBits[node] = bits
 			leafToCode[node] = code
-			--print(node.value)
 		end
 	end
 
-	--print("making inverse tree")
 	recurse(root, 0, 0, 1)
 
 	return {
@@ -306,7 +292,7 @@ function Encoder:_encodeTypeTree(node)
 	else
 		self:write(1, 1)
 		--print(1)
-		print("encoding", #node.value, node.value)
+		--print("encoding", #node.value, node.value)
 		self:writeFib(#node.value)
 		self:writeString(node.value)
 		--encodeNode(self, node)
@@ -323,7 +309,7 @@ function Encoder:_encodeValueTree(node, code)
 		self:write(1, 1)
 		local type = node.type
 		local value = node.value
-		print("encoding", type, value, code)
+		--print("encoding", type, value, code)
 		local typeNode = self._typeToNode[type]
 		local success = self:writeCode(self._typeTree, typeNode)
 		if type == "_type" then
@@ -375,7 +361,7 @@ function Encoder:_encodeTable(tabNode)
 	
 	tabNode.encoded = true
 
-	print("writing listCount", tabNode.listCount + 1)
+	--print("writing listCount", tabNode.listCount + 1)
 	self:writeFib(tabNode.listCount + 1)
 	self:writeFib(tabNode.hashCount + 1)
 
@@ -419,13 +405,13 @@ function Encoder:write(bits, code)
 		return
 	end
 
-	local str = ""
-	local n = code
-	for i = 1, bits do
-		str ..= n%2
-		n //= 2
-	end
-	print(str)
+	-- local str = ""
+	-- local n = code
+	-- for i = 1, bits do
+	-- 	str ..= n%2
+	-- 	n //= 2
+	-- end
+	-- print(str)
 
 	while self._head + bits > self._len do
 		local rem = self._len - self._head

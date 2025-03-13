@@ -3,7 +3,7 @@ local EncoderFuncs = require("./EncoderFuncs")
 local Decoder = {}
 Decoder.__index = Decoder
 
---local print = function() end
+local print = function() end
 
 function Decoder.new(buff)
 	local self = setmetatable({}, Decoder)
@@ -138,13 +138,13 @@ function Decoder:read(bits)
 	local code = buffer.readbits(self._buff, self._head, bits)
 	self._head += bits
 
-	local str = ""
-	local n = code
-	for i = 1, bits do
-		str ..= n%2
-		n //= 2
-	end
-	print(str)
+	-- local str = ""
+	-- local n = code
+	-- for i = 1, bits do
+	-- 	str ..= n%2
+	-- 	n //= 2
+	-- end
+	-- print(str)
 
 	return code
 end
