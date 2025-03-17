@@ -36,6 +36,9 @@ local encodeFuncs = {
 	["_estring"] = nil;
 	["_bstring"] = nil;
 	--["_ASCII"] = nil;
+
+	["Vector3"] = nil;
+	["vector"] = nil;
 }
 
 local decodeFuncs = {
@@ -50,6 +53,9 @@ local decodeFuncs = {
 	["_estring"] = nil;
 	["_bstring"] = nil;
 	--["_ASCII"] = nil;
+
+	["Vector3"] = nil;
+	["vector"] = nil;
 }
 
 
@@ -119,9 +125,9 @@ function encodeFuncs._double(encoder, value)
 	encoder:write(32, buffer.readbits(_f64buff, 32, 32))
 end
 
-function decodeFuncs._double(encoder)
-	buffer.writebits(_f64buff,  0, 32, encoder:read(32))
-	buffer.writebits(_f64buff, 32, 32, encoder:read(32))
+function decodeFuncs._double(decoder)
+	buffer.writebits(_f64buff,  0, 32, decoder:read(32))
+	buffer.writebits(_f64buff, 32, 32, decoder:read(32))
 	return buffer.readf64(_f64buff, 0)
 end
 
@@ -180,6 +186,39 @@ end
 
 -- function decodeFuncs._ASCII(read)
 -- end
+
+
+
+
+
+
+
+
+-- Vector3
+function subtypeFuncs.Vector3(encoder, value)
+	return "vector"
+end
+
+local _f32x3buff = buffer.create(12)
+function encodeFuncs.vector(encoder, value)
+	buffer.writef32(_f32x3buff, 0, value.x)
+	buffer.writef32(_f32x3buff, 4, value.y)
+	buffer.writef32(_f32x3buff, 8, value.z)
+	encoder:write(32, buffer.readbits(_f32x3buff,  0, 32))
+	encoder:write(32, buffer.readbits(_f32x3buff, 32, 32))
+	encoder:write(32, buffer.readbits(_f32x3buff, 64, 32))
+end
+
+function decodeFuncs.vector(decoder)
+	buffer.writebits(_f32x3buff,  0, 32, decoder:read(32))
+	buffer.writebits(_f32x3buff, 32, 32, decoder:read(32))
+	buffer.writebits(_f32x3buff, 64, 32, decoder:read(32))
+	return vector.create(
+		buffer.readf32(_f32x3buff, 0),
+		buffer.readf32(_f32x3buff, 4),
+		buffer.readf32(_f32x3buff, 8)
+	)
+end
 
 
 
