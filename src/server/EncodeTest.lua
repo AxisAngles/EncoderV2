@@ -439,6 +439,7 @@ testData = {
 	one = 1;
 	two = 2;
 	list = {"one", "two", "three"};
+	vec = vector.create(1, 2, 3);
 }
 
 testData.self = testData
@@ -461,6 +462,7 @@ print(unpack(decoder.index))
 local value = decoder:decode()
 
 print(unpack(value.A.self.list))
+print(value.A.vec)
 
 
 --print(unpack(value.self.list))

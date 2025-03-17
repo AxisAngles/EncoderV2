@@ -18,6 +18,7 @@ local subtypeFuncs = {
 	["boolean"] = nil;
 	["number"] = nil;
 	["string"] = nil;
+	["Vector3"] = nil;
 }
 
 -- we split up types into subtypes when we expect some subtypes to be way more common than others
@@ -37,7 +38,6 @@ local encodeFuncs = {
 	["_bstring"] = nil;
 	--["_ASCII"] = nil;
 
-	["Vector3"] = nil;
 	["vector"] = nil;
 }
 
@@ -54,7 +54,6 @@ local decodeFuncs = {
 	["_bstring"] = nil;
 	--["_ASCII"] = nil;
 
-	["Vector3"] = nil;
 	["vector"] = nil;
 }
 
@@ -118,17 +117,12 @@ function decodeFuncs._zero(decoder)
 	return 0
 end
 
-local _f64buff = buffer.create(8)
 function encodeFuncs._double(encoder, value)
-	buffer.writef64(_f64buff, 0, value)
-	encoder:write(32, buffer.readbits(_f64buff,  0, 32))
-	encoder:write(32, buffer.readbits(_f64buff, 32, 32))
+	encoder:writeF64(value)
 end
 
 function decodeFuncs._double(decoder)
-	buffer.writebits(_f64buff,  0, 32, decoder:read(32))
-	buffer.writebits(_f64buff, 32, 32, decoder:read(32))
-	return buffer.readf64(_f64buff, 0)
+	return decoder:readF64()
 end
 
 function encodeFuncs._pfib(encoder, value)
@@ -199,25 +193,42 @@ function subtypeFuncs.Vector3(encoder, value)
 	return "vector"
 end
 
-local _f32x3buff = buffer.create(12)
 function encodeFuncs.vector(encoder, value)
-	buffer.writef32(_f32x3buff, 0, value.x)
-	buffer.writef32(_f32x3buff, 4, value.y)
-	buffer.writef32(_f32x3buff, 8, value.z)
-	encoder:write(32, buffer.readbits(_f32x3buff,  0, 32))
-	encoder:write(32, buffer.readbits(_f32x3buff, 32, 32))
-	encoder:write(32, buffer.readbits(_f32x3buff, 64, 32))
+	encoder:writeF32(value.x)
+	encoder:writeF32(value.y)
+	encoder:writeF32(value.z)
 end
 
 function decodeFuncs.vector(decoder)
-	buffer.writebits(_f32x3buff,  0, 32, decoder:read(32))
-	buffer.writebits(_f32x3buff, 32, 32, decoder:read(32))
-	buffer.writebits(_f32x3buff, 64, 32, decoder:read(32))
 	return vector.create(
-		buffer.readf32(_f32x3buff, 0),
-		buffer.readf32(_f32x3buff, 4),
-		buffer.readf32(_f32x3buff, 8)
-	)
+		decoder:readF32(),
+		decoder:readF32(),
+		decoder:readF32())
+end
+
+
+
+
+
+
+
+
+-- CFrame
+function encodeFuncs.CFrame(encoder, value)
+	local px, py, pz, xx, yx, zx, xy, yy, zy, xz, yz, zz = value:GetComponents()
+	encoder:writeF32(px) encoder:writeF32(py) encoder:writeF32(pz)
+	encoder:writeF32(xx) encoder:writeF32(yx) encoder:writeF32(zx)
+	encoder:writeF32(xy) encoder:writeF32(yy) encoder:writeF32(zy)
+	encoder:writeF32(xz) encoder:writeF32(yz) encoder:writeF32(zz)
+	encoder:writeF32(px) encoder:writeF32(px) encoder:writeF32(px)
+end
+
+function decodeFuncs.CFrame(decoder)
+	return CFrame.new(
+		decoder:readF32(), decoder:readF32(), decoder:readF32(),
+		decoder:readF32(), decoder:readF32(), decoder:readF32(),
+		decoder:readF32(), decoder:readF32(), decoder:readF32(),
+		decoder:readF32(), decoder:readF32(), decoder:readF32())
 end
 
 
