@@ -1,25 +1,29 @@
 local EncoderFuncs = require("./EncoderFuncs")
 local BitBuffer = require("./BitBuffer")
+local Deduplicator = require("./Deduplicator")
 
 local Encoder = {}
 Encoder.__index = Encoder
 
 function Encoder.new(buff)
 	local self = setmetatable({}, Encoder)
-	self._writer = BitBuffer.Writer.new()
-	
-	self._tableEncoded = {}
 
-	self._writer:writeFib(1) -- version
+	-- this is for data
+	self._writer = BitBuffer.Writer.new()
+	self._indexNames = {}
+	self._indexLengths = {}
 
 	return self
 end
 
 
+-- we will need to have a way to point to the original object
 
+function Encoder:encode(value, name)
+	local dataOrig = self._writer:getHead()
 
-function Encoder:encode(value)
 	self:_collectValues(value)
+	self:_deduplicateValues()
 	self:_createValueLeaves()
 	self:_createValueTree()
 
@@ -30,19 +34,57 @@ function Encoder:encode(value)
 	self:_encodeTypeTree(self._typeTree.root)
 	self:_encodeValueTree(self._valueTree.root)
 	self:_encodeValue(value)
+
+	local dataStop = self._writer:getHead()
+	local dataLength = dataStop - dataOrig
+
+	table.insert(self._indexNames, name)
+	table.insert(self._indexLengths, dataLength)
 end
 
 function Encoder:dump()
-	return self._writer:dump()
+	local n = #self._indexNames
+
+	local containerWriter = BitBuffer.Writer.new()
+	containerWriter:writeFib(1) -- version
+
+	--print(containerWriter:getHead())
+	containerWriter:writeFib(n + 1) -- number of indices
+	--print(containerWriter:getHead())
+	for i = 1, n do
+		local indexName = self._indexNames[i]
+		local indexLength = self._indexLengths[i]
+		containerWriter:writeFib(#indexName + 1)
+		containerWriter:writeString(indexName)
+		containerWriter:writeFib(indexLength)
+		print(containerWriter:getHead())
+	end
+
+	local dataBuff = self._writer:dump()
+	local dataHead = self._writer:getHead()
+	print(containerWriter:getHead())
+	containerWriter:writeBufferBits(dataBuff, 0, dataHead)
+
+	return containerWriter:dump()
+end
+
+function Encoder:_deduplicateValues()
+	self._deduplicator = Deduplicator.new()
+
+	-- just remove/combine nodes for duplicate values
+	for value, node in self._valueToNode do
+		local ident = self._deduplicator:index(value, self._literalDataBuff, node.orig, node.cost)
+		if rawequal(ident, value) then
+			-- yeah we good
+		else
+			self._valueToNode[value] = nil
+			self._valueToNode[ident].freq += node.freq
+		end
+	end
 end
 
 -- eventually this can deduplicate actually
 function Encoder:_collectValues(value)
-	-- maybe this should make a counter class instead
-	-- eventually write to a different buffer so that we can hash and deduplicate similar CFrames and Color3s
-	-- typeToHash
-	-- hashToNodeList
-	-- node list contains all values of a certain type which hash to the same value
 
 	local writer = BitBuffer.Writer.new()
 
@@ -84,6 +126,7 @@ function Encoder:_collectValues(value)
 			node.listCount = listCount
 			node.hashCount = hashCount
 		else
+			-- this is getting cached for later
 			node.orig = writer:getHead()
 			EncoderFuncs.encode(writer, type, value)
 			node.cost = writer:getHead() - node.orig
@@ -333,6 +376,9 @@ end
 ]]
 
 function Encoder:_encodeValue(value)
+	-- this converts the value into its identity value
+	value = self._deduplicator:index(value)
+
 	local valueNode = self._valueToNode[value]
 	local written = self._writer:writeCode(self._valueTree, valueNode)
 	local type = valueNode.type
@@ -389,11 +435,19 @@ end
 
 
 
-local test = {1, 2, 3}
-test[test] = test
+testData = {
+	one = 1;
+	two = 2;
+	list = {"one", "two", "three"};
+}
+
+testData.self = testData
+
+test = testData
 
 local encoder = Encoder.new()
-encoder:encode(test)
+encoder:encode(test, "A")
+encoder:encode(test, "B")
 
 local data = encoder:dump()
 
@@ -402,10 +456,14 @@ local Decoder = require("./DecodeTest")
 print("buffer length", buffer.len(data))
 
 local decoder = Decoder.new(data)
+
+print(unpack(decoder.index))
 local value = decoder:decode()
 
+print(unpack(value.A.self.list))
 
-print(unpack(value[value]))
+
+--print(unpack(value.self.list))
 
 
 

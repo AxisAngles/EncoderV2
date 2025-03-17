@@ -135,6 +135,14 @@ function Reader:read(bits)
 	return code
 end
 
+function Reader:setHead(head)
+	self._head = head
+end
+
+function Reader:getHead(head)
+	return self._head
+end
+
 
 
 
@@ -153,11 +161,184 @@ function Writer:writeBufferBits(buff, orig, bits)
 	self:write(bits, buffer.readbits(buff, orig, bits))
 end
 
+-- function Writer:copyTo(dest)
+-- 	for i, buff in self._buffs do
+-- 		local x = 0
+-- 		local len = buffer.
+-- 		while x < 
+-- end
+
 -- TODO: implement Reader:readBufferBits for consistency
 
 
 
 
+
+
+
+
+-- local _fibbuff = buffer.create(8)
+-- local function writeFib(n)
+-- 	local a0, a1 = 1, 1
+-- 	local bits = 0
+-- 	repeat
+-- 		bits += 1
+-- 		a0, a1 = a1, a0 + a1
+-- 	until n < a1
+
+-- 	buffer.writebits(_fibbuff, bits + 1, 1, 1)
+-- 	while a0 > 0 do
+-- 		if n >= a0 then
+-- 			--print(a0)
+-- 			buffer.writebits(_fibbuff, bits, 1, 1)
+-- 			n -= a0
+-- 		else
+-- 			buffer.writebits(_fibbuff, bits, 1, 0)
+-- 			--print(0)
+-- 		end
+-- 		bits -= 1
+-- 		a0, a1 = a1 - a0, a0
+-- 	end
+-- end
+
+
+-- local function writeFib(n)
+-- 	local a0, a1 = 1, 1
+-- 	local bits = 0
+-- 	repeat
+-- 		bits += 1
+-- 		a0, a1 = a1, a0 + a1
+-- 	until n < a1
+
+-- 	local code0 = 1
+-- 	local code1 = 0
+-- 	--buffer.writebits(_fibbuff, bits + 1, 1, 1)
+-- 	while a0 > 0 do
+-- 		code0 *= 2
+-- 		code1 *= 2
+-- 		code1 += code0//2^32
+-- 		code0 %= 2^32
+-- 		if n >= a0 then
+-- 			--print(a0)
+-- 			--buffer.writebits(_fibbuff, bits, 1, 1)
+-- 			code0 += 1
+-- 			n -= a0
+-- 		else
+-- 			--buffer.writebits(_fibbuff, bits, 1, 0)
+-- 			--print(0)
+-- 		end
+-- 		--bits -= 1
+-- 		a0, a1 = a1 - a0, a0
+-- 	end
+-- end
+
+-- local function writeFib(n)
+-- 	local a0, a1 = 1, 1
+-- 	local bits = 0
+-- 	repeat
+-- 		bits += 1
+-- 		a0, a1 = a1, a0 + a1
+-- 	until n < a1
+
+-- 	local code0 = 1
+-- 	local code1 = 0
+-- 	--buffer.writebits(_fibbuff, bits + 1, 1, 1)
+-- 	while a0 > 0 do
+-- 		code0 *= 2
+-- 		code1 *= 2
+-- 		code1 += code0//2^32
+-- 		code0 %= 2^32
+-- 		if n >= a0 then
+-- 			--print(a0)
+-- 			--buffer.writebits(_fibbuff, bits, 1, 1)
+-- 			code0 += 1
+-- 			n -= a0
+-- 		else
+-- 			--buffer.writebits(_fibbuff, bits, 1, 0)
+-- 			--print(0)
+-- 		end
+-- 		--bits -= 1
+-- 		a0, a1 = a1 - a0, a0
+-- 	end
+-- end
+
+-- -- Fibonacci positive integer coding
+-- local fibSeq = {}
+-- local a0, a1 = 1, 1
+
+-- for i = 1, 32 do
+-- 	a0, a1 = a1, a0 + a1
+-- 	fibSeq[i] = a0
+-- end
+
+-- local function writeFib(n)
+-- 	local c
+-- 	for i, f in next, fibSeq do
+-- 		if f > n then
+-- 			c = i - 1
+-- 			break
+-- 		end
+-- 	end
+
+-- 	if not c then
+-- 		error(n .. " is too large to be fib encoded")
+-- 	end
+
+-- 	local code0 = 1
+-- 	local code1 = 0
+-- 	for i = c, 1, -1 do
+-- 		local f = fibSeq[i]
+-- 		code0 *= 2
+-- 		code1 *= 2
+-- 		code1 += code0//2^32
+-- 		code0 %= 2^32
+-- 		if n >= f then
+-- 			code0 += 1
+-- 			n -= f
+-- 		end
+-- 	end
+
+-- 	-- self:write(c, code)
+-- 	-- self:write(1, 1)
+-- end
+
+
+-- local function writeFib(n)
+-- 	local c
+-- 	for i, f in next, fibSeq do
+-- 		if f > n then
+-- 			c = i - 1
+-- 			break
+-- 		end
+-- 	end
+
+-- 	if not c then
+-- 		error(n .. " is too large to be fib encoded")
+-- 	end
+
+-- 	local code0 = 1
+-- 	local code1 = 0
+-- 	for i = c, 1, -1 do
+-- 		local f = fibSeq[i]
+-- 		code0 *= 2
+-- 		code1 *= 2
+-- 		code1 += code0//2^32
+-- 		code0 %= 2^32
+-- 		if n >= f then
+-- 			code0 += 1
+-- 			n -= f
+-- 		end
+-- 	end
+
+-- 	-- self:write(c, code)
+-- 	-- self:write(1, 1)
+-- end
+
+-- local t0 = os.clock()
+-- for i = 1, 1000000 do
+-- 	writeFib(i)
+-- end
+-- print(os.clock() - t0)
 
 
 

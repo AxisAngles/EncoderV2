@@ -4,17 +4,21 @@ local BitBuffer = require("./BitBuffer")
 local Decoder = {}
 Decoder.__index = Decoder
 
-local print = function() end
+--local print = function() end
 
 function Decoder.new(buff)
 	local self = setmetatable({}, Decoder)
 
-	self._buff = buff
-	self._head = 0
-	
-	self._tableDecoded = {}
+	self._reader = BitBuffer.Reader.new(buff)
+	assert(self._reader:readFib() == 1, "version incompatible") -- version
 
-	assert(self:readFib() == 1, "version incompatible") -- version
+	self._indexNameToIndexHead = {}
+	self._indexNameToValue = {}
+	self._dataOrig = nil
+
+	self.index = {}
+
+	self:_decodeIndex()
 
 	return self
 end
@@ -24,21 +28,52 @@ end
 -- 2 grande americanos (15x2 calories)
 -- chipotle double chicken with sourcream (900 calories)
 
-function Decoder:decode()
-	if self._decoded then
-		return self._value
+function Decoder:_decodeIndex()
+	local totalLength = 0
+	local indexCount = self._reader:readFib() - 1
+	for i = 1, indexCount do
+		local l = self._reader:readFib() - 1
+		local indexName = self._reader:readString(l)
+		local indexLength = self._reader:readFib()
+
+		self._indexNameToIndexHead[indexName] = totalLength
+		table.insert(self.index, indexName)
+
+		totalLength += indexLength
+	end
+	self._dataOrig = self._reader:getHead()
+end
+
+function Decoder:decode(name)
+	if name ~= nil then
+		return self:_decode(name)
 	end
 
-	self._decoded = true
-	--self._version = self:readFib()
-	print("reading type tree")
-	self._typeTree = self:_decodeTypeTree()
-	print("reading value tree")
-	self._valueTree = self:_decodeValueTree()
-	print("reading value")
-	self._value = self:_decodeValue()
+	for _, indexName in self.index do
+		self:_decode(indexName)
+	end
 
-	return self._value
+	return table.clone(self._indexNameToValue)
+end
+
+function Decoder:_decode(name)
+	-- print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+	print("index", name)
+	if self._indexNameToValue[name] == nil then
+		local indexHead = self._indexNameToIndexHead[name]
+		--print(name)
+		assert(indexHead, name .. " is not a valid indexName for this data")
+
+		self._reader:setHead(self._dataOrig + indexHead)
+		--print(self._reader:getHead())
+
+		self._tableDecoded = {}
+		self._typeTree = self:_decodeTypeTree()
+		self._valueTree = self:_decodeValueTree()
+		self._indexNameToValue[name] = self:_decodeValue()
+	end
+
+	return self._indexNameToValue[name]
 end
 
 
@@ -47,13 +82,10 @@ end
 
 function Decoder:_decodeTypeTree()
 	local node = {}
-	local isLeaf = self:read(1) == 1
+	local isLeaf = self._reader:read(1) == 1
 	if isLeaf then
-		print("reading type string")
-		local len = self:readFib()
-		print("len", len)
-		node.value = self:readString(len)
-		print("value", node.value)
+		local len = self._reader:readFib()
+		node.value = self._reader:readString(len)
 	else
 		node.node0 = self:_decodeTypeTree()
 		node.node1 = self:_decodeTypeTree()
@@ -64,18 +96,17 @@ end
 function Decoder:_decodeValueTree(code)
 	code = code or ""
 	local node = {}
-	local isLeaf = self:read(1) == 1
+	local isLeaf = self._reader:read(1) == 1
 	if isLeaf then
-		local type = self:readCode(self._typeTree).value
+		local type = self._reader:readCode(self._typeTree).value
 		node.type = type
 		if type == "_type" then -- this is a special case
-			node.value = self:readCode(self._typeTree).value
+			node.value = self._reader:readCode(self._typeTree).value
 		elseif type == "table" then
 			node.value = {} -- just initialize a table for reference purposes
 		else
-			node.value = EncoderFuncs.decode(self, type)
+			node.value = EncoderFuncs.decode(self._reader, type)
 		end
-		print("value tree", code, type, node.value)
 	else
 		node.node0 = self:_decodeValueTree(code .. "0")
 		node.node1 = self:_decodeValueTree(code .. "1")
@@ -84,19 +115,16 @@ function Decoder:_decodeValueTree(code)
 end
 
 function Decoder:_decodeValue()
-	local node = self:readCode(self._valueTree)
+	local node = self._reader:readCode(self._valueTree)
 	if node.type == "_type" then -- decode a literal
-		print("reading literal", node.value)
 		if node.value == "table" then
 			return self:_decodeTable({})
 		else
-			return EncoderFuncs.decode(self, node.value)
+			return EncoderFuncs.decode(self._reader, node.value)
 		end
 	elseif node.type == "table" then -- decode a table
-		print("reading table", node.value)
 		return self:_decodeTable(node.value)
 	else -- just return the reference
-		print("reading reference", node.value)
 		return node.value
 	end
 end
@@ -108,20 +136,15 @@ function Decoder:_decodeTable(tab)
 
 	self._tableDecoded[tab] = true
 
-	print("reading listCount")
-	local listCount = self:readFib() - 1
-	print("reading hashCount")
-	local hashCount = self:readFib() - 1
-	print("read values", listCount, hashCount)
+	local listCount = self._reader:readFib() - 1
+	local hashCount = self._reader:readFib() - 1
 
 	for i = 1, listCount do
-		print("reading list value", i)
 		local value = self:_decodeValue()
 		tab[i] = value
 	end
 
 	for i = 1, hashCount do
-		print("reading index value pair", i)
 		local index = self:_decodeValue()
 		local value = self:_decodeValue()
 		tab[index] = value
@@ -129,75 +152,6 @@ function Decoder:_decodeTable(tab)
 
 	return tab
 end
-
-
-
-
-
-
-function Decoder:read(bits)
-	local code = buffer.readbits(self._buff, self._head, bits)
-	self._head += bits
-
-	-- local str = ""
-	-- local n = code
-	-- for i = 1, bits do
-	-- 	str ..= n%2
-	-- 	n //= 2
-	-- end
-	-- print(str)
-
-	return code
-end
-
--- built-in decode functionality
-
-local fibSeq = {}
-local a0, a1 = 1, 1
-
-for i = 1, 32 do
-	a0, a1 = a1, a0 + a1
-	fibSeq[i] = a0
-end
-
-Decoder.maxFib = a1 - 1
-
-function Decoder:readFib()
-	local n = 0
-	local armed = false
-	for i, f in next, fibSeq do
-		local d = self:read(1)
-		if armed and d == 1 then
-			return n
-		end
-		armed = d == 1
-		n += f*d
-	end
-end
-
-function Decoder:readString(len)
-	local strbuff = buffer.create(len)
-	for i = 0, len - 1 do
-		buffer.writeu8(strbuff, i, self:read(8))
-	end
-
-	return buffer.tostring(strbuff)
-end
-
-function Decoder:readCode(root)
-	local node = root
-	while node.node0 do -- while it's a branch
-		local branch = self:read(1)
-		if branch == 0 then
-			node = node.node0
-		else
-			node = node.node1
-		end
-	end
-
-	return node
-end
-
 
 
 
@@ -258,5 +212,3 @@ return Decoder
 
 -- local value = decoder:decode()
 
-
--- print(value.one, value.two, value.self == value, value.list)
