@@ -453,6 +453,38 @@ function Reader:readCode(root)
 	return node
 end
 
+
+
+
+
+
+
+
+-- Floating Point
+local _fbuff = buffer.create(8)
+
+function Writer:writeF32(f)
+	buffer.writef32(_fbuff, 0, f)
+	self:write(32, buffer.readu32(_fbuff, 0))
+end
+
+function Reader:readF32()
+	buffer.writeu32(_fbuff, 0, self:read(32))
+	return buffer.readf32(_fbuff, 0)
+end
+
+function Writer:writeF64(f)
+	buffer.writef64(_fbuff, 0, f)
+	self:write(32, buffer.readu32(_fbuff, 0))
+	self:write(32, buffer.readu32(_fbuff, 4))
+end
+
+function Reader:readF64()
+	buffer.writeu32(_fbuff, 0, self:read(32))
+	buffer.writeu32(_fbuff, 4, self:read(32))
+	return buffer.readf64(_fbuff, 0)
+end
+
 BitBuffer.Writer = Writer
 BitBuffer.Reader = Reader
 
