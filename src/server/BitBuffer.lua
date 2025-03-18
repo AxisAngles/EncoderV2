@@ -394,6 +394,9 @@ function Reader:readFib()
 		armed = d == 1
 		n += f*d
 	end
+
+	self:read(1) -- must stop here
+	return n
 end
 
 

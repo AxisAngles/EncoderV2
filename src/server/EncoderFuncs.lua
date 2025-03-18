@@ -220,7 +220,6 @@ function encodeFuncs.CFrame(encoder, value)
 	encoder:writeF32(xx) encoder:writeF32(yx) encoder:writeF32(zx)
 	encoder:writeF32(xy) encoder:writeF32(yy) encoder:writeF32(zy)
 	encoder:writeF32(xz) encoder:writeF32(yz) encoder:writeF32(zz)
-	encoder:writeF32(px) encoder:writeF32(px) encoder:writeF32(px)
 end
 
 function decodeFuncs.CFrame(decoder)
@@ -229,6 +228,57 @@ function decodeFuncs.CFrame(decoder)
 		decoder:readF32(), decoder:readF32(), decoder:readF32(),
 		decoder:readF32(), decoder:readF32(), decoder:readF32(),
 		decoder:readF32(), decoder:readF32(), decoder:readF32())
+end
+
+
+
+
+
+
+
+
+-- Color3
+function subtypeFuncs.Color3(encoder, value)
+	local f32x3 = vector.create(value.R, value.G, value.B)*255
+	local hexR, hexG, hexB = f32x3.X, f32x3.Y, f32x3.Z
+	if
+		0 <= hexR and hexR <= 255 and hexR%1 == 0 and
+		0 <= hexG and hexG <= 255 and hexG%1 == 0 and
+		0 <= hexB and hexB <= 255 and hexB%1 == 0
+	then
+		print("color3rgb")
+		return "_color3RGB"
+	else
+		print("color3")
+		return "Color3"
+	end
+end
+
+function encodeFuncs.Color3(encoder, value)
+	encoder:writeF32(value.R)
+	encoder:writeF32(value.G)
+	encoder:writeF32(value.B)
+end
+
+function decodeFuncs.Color3(decoder)
+	return Color3.new(
+		decoder:readF32(),
+		decoder:readF32(),
+		decoder:readF32())
+end
+
+function encodeFuncs._color3RGB(encoder, value)
+	local f32x3 = vector.create(value.R, value.G, value.B)*255
+	encoder:write(8, f32x3.X)
+	encoder:write(8, f32x3.Y)
+	encoder:write(8, f32x3.Z)
+end
+
+function decodeFuncs._color3RGB(decoder)
+	return Color3.fromRGB(
+		decoder:read(8),
+		decoder:read(8),
+		decoder:read(8))
 end
 
 
@@ -254,14 +304,19 @@ local function subtypeof(encoder, value)
 end
 
 local function encode(encoder, subtype, value)
-	if not encodeFuncs[subtype] then
+	local f = encodeFuncs[subtype]
+	if not f then
 		error("no subtype encoder " .. subtype)
 	end
-	encodeFuncs[subtype](encoder, value)
+	f(encoder, value)
 end
 
 local function decode(decoder, subtype)
-	return decodeFuncs[subtype](decoder)
+	local f = decodeFuncs[subtype]
+	if not f then
+		error("no subtype decoder " .. subtype)
+	end
+	return f(decoder)
 end
 
 

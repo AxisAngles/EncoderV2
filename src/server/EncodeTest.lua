@@ -335,6 +335,7 @@ function Encoder:_encodeTypeTree(node)
 		self._writer:write(1, 1)
 		--print(1)
 		--print("encoding", #node.value, node.value)
+		print(node.value)
 		self._writer:writeFib(#node.value)
 		self._writer:writeString(node.value)
 		--encodeNode(self, node)
@@ -440,6 +441,19 @@ testData = {
 	two = 2;
 	list = {"one", "two", "three"};
 	vec = vector.create(1, 2, 3);
+	Cs = {
+		CFrame.new(),
+		CFrame.new(),
+		CFrame.new(),
+	};
+	colorA = Color3.fromRGB(0, 1, 255);
+	colorB = Color3.fromRGB(0, 1, 255);
+	colorC = Color3.fromRGB(0, 1, 255);
+	colors = {
+		Color3.new(1, 2, 3),
+		Color3.new(4, 5, 6),
+		Color3.new(7, 8, 9),
+	}
 }
 
 testData.self = testData
@@ -448,7 +462,7 @@ test = testData
 
 local encoder = Encoder.new()
 encoder:encode(test, "A")
-encoder:encode(test, "B")
+--encoder:encode(test, "B")
 
 local data = encoder:dump()
 
@@ -463,6 +477,8 @@ local value = decoder:decode()
 
 print(unpack(value.A.self.list))
 print(value.A.vec)
+print(value.A.Cs[1])
+print(value)
 
 
 --print(unpack(value.self.list))

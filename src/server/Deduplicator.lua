@@ -72,12 +72,16 @@ function Deduplicator:index(value, buff, orig, bits)
 		return value
 	end
 
+	print("indexing", value, buff, orig, bits)
+
 	local hit = self._valueToHit[value]
 	if hit then
+		print("found")
 		return hit.value
 	end
 
 	if not (buff and orig and bits) then
+		print(buff, orig, bits)
 		error("must pass buff orig and bits if value not yet indexed")
 	end
 
@@ -88,6 +92,7 @@ function Deduplicator:index(value, buff, orig, bits)
 	end
 
 	local hash = hashBuffer(buff, orig, bits)
+	print("hash", hash)
 	local hitList = hashToHitList[hash]
 	if not hitList then
 		hitList = {}
@@ -97,6 +102,7 @@ function Deduplicator:index(value, buff, orig, bits)
 	for i, hit in hitList do
 		local match = compareBuffer(hit.buff, hit.orig, hit.bits, buff, orig, bits)
 		if match then
+			self._valueToHit[value] = hit
 			return hit.value
 		end
 	end
@@ -109,6 +115,7 @@ function Deduplicator:index(value, buff, orig, bits)
 	}
 
 	self._valueToHit[value] = hit
+	--print("assigning value")
 	table.insert(hitList, hit)
 
 	return value
