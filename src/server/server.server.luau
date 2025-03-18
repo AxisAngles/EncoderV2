@@ -3,7 +3,8 @@
 --!strict
 
 
-local EncodeTest = require("./EncodeTest")
+local Encoder = require("./Encoder")
+
 
 -- local RangeBuffer = require(script.Parent.RangeBuffer)
 
