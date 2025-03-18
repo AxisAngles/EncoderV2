@@ -4,7 +4,86 @@
 
 
 local Encoder = require("./Encoder")
+local Decoder = require("./Decoder")
 
+local Serializer = require("./Serializer64")
+
+local playerDataStringList = require("./PlayerData1")
+local t0 = os.clock()
+local playerData = Serializer.deserialize(playerDataStringList[3])
+print(os.clock() - t0)
+
+-- print(playerData)
+
+
+local encoder = Encoder.new()
+
+local t0 = os.clock()
+encoder:encode(playerData)
+print(os.clock() - t0)
+
+local t0 = os.clock()
+local dataString = encoder:dump()
+print(os.clock() - t0)
+
+local decoder = Decoder.new(dataString)
+
+local t0 = os.clock()
+local value = decoder:decode()
+print(os.clock() - t0)
+
+
+-- print(value)
+print(#playerDataStringList[3])
+print(buffer.len(dataString)*8/6)
+
+
+-- old decode time 0.141
+-- new encode time 0.259
+-- new decode time 0.205
+-- old size bytes 946968
+-- new size bytes 343187
+
+-- local function deepCompare(A, B)
+-- 	if A == B then
+-- 		return true
+-- 	end
+-- 	if typeof(A) ~= typeof(B) then
+-- 		return false
+-- 	end
+
+-- 	if typeof(A) ~= "table" then
+-- 		return false
+-- 	end
+
+-- 	for i, v in A do
+-- 		if not deepCompare(A[i], B[i]) then
+-- 			return false
+-- 		end
+-- 	end
+
+-- 	return true
+-- end
+
+-- local tab = {
+-- 	1, 2, 3,
+-- 	vector.create(1, 2, 3)
+-- }
+
+-- tab[tab] = tab
+
+-- local encoder = Encoder.new()
+
+-- encoder:encode(tab)
+-- encoder:encode(tab)
+-- local x = encoder:dump()
+-- print(buffer.tostring(x))
+
+-- local decoder = Decoder.new(x)
+
+-- local value = decoder:decode()
+-- local value = decoder:decode()
+-- print(value[value][value][4])
 
 -- local RangeBuffer = require(script.Parent.RangeBuffer)
 

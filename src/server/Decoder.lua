@@ -13,7 +13,7 @@ function Decoder.new(buff)
 	return self
 end
 
-function Decoder:decode(name)
+function Decoder:decode()
 	self._tableDecoded = {}
 	self._typeTree = self:_decodeTypeTree()
 	self._valueTree = self:_decodeValueTree()

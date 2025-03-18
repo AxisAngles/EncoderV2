@@ -1,3 +1,7 @@
+-- This is a rough draft
+-- Performance can probably be improved a lot
+-- But for occasional player data, it is probably not so bad.
+
 local EncoderFuncs = require("./EncoderFuncs")
 local BitBuffer = require("./BitBuffer")
 local Deduplicator = require("./Deduplicator")
