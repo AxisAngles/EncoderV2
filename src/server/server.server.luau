@@ -1,7 +1,3 @@
--- By Trey Reynolds (AxisAngle)
---!native
---!strict
-
 
 local Encoder = require("./Encoder")
 local Decoder = require("./Decoder")
@@ -10,7 +6,7 @@ local Serializer = require("./Serializer64")
 
 local playerDataStringList = require("./PlayerData1")
 local t0 = os.clock()
-local playerData = Serializer.deserialize(playerDataStringList[3])
+local playerData = Serializer.deserialize(playerDataStringList[2])
 print(os.clock() - t0)
 
 -- print(playerData)
@@ -34,8 +30,8 @@ print(os.clock() - t0)
 
 
 -- print(value)
-print(#playerDataStringList[3])
-print(buffer.len(dataString)*8/6)
+print(#playerDataStringList[2])
+print(string.len(dataString))
 
 
 -- old decode time 0.141

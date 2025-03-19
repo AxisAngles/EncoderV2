@@ -2,9 +2,10 @@
 -- Performance can probably be improved a lot
 -- But for occasional player data, it is probably not so bad.
 
+local Base64Converter = require("./Base64Converter")
 local EncoderFuncs = require("./EncoderFuncs")
-local BitBuffer = require("./BitBuffer")
 local Deduplicator = require("./Deduplicator")
+local BitBuffer = require("./BitBuffer")
 
 local Encoder = {}
 Encoder.__index = Encoder
@@ -38,27 +39,7 @@ function Encoder:encode(value)
 end
 
 function Encoder:dump()
-	--local n = #self._indexNames
-
-	-- local containerWriter = BitBuffer.Writer.new()
-	-- containerWriter:writeFib(1) -- version
-
-	-- containerWriter:writeFib(n + 1) -- number of indices
-	-- for i = 1, n do
-	-- 	local indexName = self._indexNames[i]
-	-- 	local indexLength = self._indexLengths[i]
-	-- 	containerWriter:writeFib(#indexName + 1)
-	-- 	containerWriter:writeString(indexName)
-	-- 	containerWriter:writeFib(indexLength)
-	-- end
-
-	-- local dataBuff = self._writer:dump()
-	-- local dataHead = self._writer:getHead()
-	-- containerWriter:writeBufferBits(dataBuff, 0, dataHead)
-
-	-- return containerWriter:dump()
-
-	return self._writer:dump()
+	return Base64Converter.fromBuffer256(self._writer:dump())
 end
 
 function Encoder:_deduplicateValues()

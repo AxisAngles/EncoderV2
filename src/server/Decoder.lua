@@ -1,10 +1,12 @@
+local Base64Converter = require("./Base64Converter")
 local EncoderFuncs = require("./EncoderFuncs")
 local BitBuffer = require("./BitBuffer")
 
 local Decoder = {}
 Decoder.__index = Decoder
 
-function Decoder.new(buff)
+function Decoder.new(str)
+	local buff = Base64Converter.toBuffer256(str)
 	local self = setmetatable({}, Decoder)
 
 	self._reader = BitBuffer.Reader.new(buff)
