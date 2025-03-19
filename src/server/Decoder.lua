@@ -22,10 +22,6 @@ function Decoder:decode()
 	return self:_decodeValue()
 end
 
-
-
-
-
 function Decoder:_decodeTypeTree()
 	local node = {}
 	local isLeaf = self._reader:read(1) == 1
@@ -39,8 +35,7 @@ function Decoder:_decodeTypeTree()
 	return node
 end
 
-function Decoder:_decodeValueTree(code)
-	code = code or ""
+function Decoder:_decodeValueTree()
 	local node = {}
 	local isLeaf = self._reader:read(1) == 1
 	if isLeaf then
@@ -54,8 +49,8 @@ function Decoder:_decodeValueTree(code)
 			node.value = EncoderFuncs.decode(self._reader, type)
 		end
 	else
-		node.node0 = self:_decodeValueTree(code .. "0")
-		node.node1 = self:_decodeValueTree(code .. "1")
+		node.node0 = self:_decodeValueTree()
+		node.node1 = self:_decodeValueTree()
 	end
 	return node
 end

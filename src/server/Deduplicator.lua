@@ -72,16 +72,12 @@ function Deduplicator:index(value, buff, orig, bits)
 		return value
 	end
 
-	print("indexing", value, buff, orig, bits)
-
 	local hit = self._valueToHit[value]
 	if hit then
-		print("found")
 		return hit.value
 	end
 
 	if not (buff and orig and bits) then
-		print(buff, orig, bits)
 		error("must pass buff orig and bits if value not yet indexed")
 	end
 
@@ -92,7 +88,6 @@ function Deduplicator:index(value, buff, orig, bits)
 	end
 
 	local hash = hashBuffer(buff, orig, bits)
-	print("hash", hash)
 	local hitList = hashToHitList[hash]
 	if not hitList then
 		hitList = {}
@@ -115,35 +110,9 @@ function Deduplicator:index(value, buff, orig, bits)
 	}
 
 	self._valueToHit[value] = hit
-	--print("assigning value")
 	table.insert(hitList, hit)
 
 	return value
 end
 
-
---print(typeof(vector.create(1, 2, 3)))
-
--- local buff = buffer.create(2)
--- buffer.writeu8(buff, 0, 10)
--- buffer.writeu8(buff, 1, 10)
-
--- local deduplicator = Deduplicator.new()
-
--- print(deduplicator:index(0, buff, 0, 8))
--- print(deduplicator:index(1, buff, 8, 8))
-
 return Deduplicator
-
--- local buff = buffer.create(8)
-
--- buffer.writebits(buff,  0, 8, 0)
--- buffer.writebits(buff,  8, 8, 1)
--- buffer.writebits(buff, 16, 8, 2)
--- buffer.writebits(buff, 24, 8, 3)
--- buffer.writebits(buff, 32, 8, 4)
--- buffer.writebits(buff, 40, 8, 5)
--- buffer.writebits(buff, 48, 8, 6)
--- buffer.writebits(buff, 56, 8, 7)
-
--- print(hashBuffer(buff, 0, 64))
