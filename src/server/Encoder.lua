@@ -10,7 +10,7 @@ local BitBuffer = require("./BitBuffer")
 local Encoder = {}
 Encoder.__index = Encoder
 
-function Encoder.new(buff)
+function Encoder.new()
 	local self = setmetatable({}, Encoder)
 
 	-- this is for data
@@ -38,7 +38,11 @@ function Encoder:encode(value)
 	self:_encodeValue(value)
 end
 
-function Encoder:dump()
+function Encoder:dumpToBuffer()
+	return self._writer:dump()
+end
+
+function Encoder:dumpToString64()
 	return Base64Converter.fromBuffer256(self._writer:dump())
 end
 

@@ -29,11 +29,11 @@ local t0 = os.clock()
 
 local encoder = Encoder.new()
 encoder:encode(tab)
-local data = encoder:dump()
+local dataString = encoder:dumpToString64()
 
 local t1 = os.clock()
 
-local decoder = Decoder.new(data)
+local decoder = Decoder.fromString64(dataString)
 local dup = decoder:decode()
 
 local t2 = os.clock()

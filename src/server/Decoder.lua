@@ -5,14 +5,21 @@ local BitBuffer = require("./BitBuffer")
 local Decoder = {}
 Decoder.__index = Decoder
 
-function Decoder.new(str)
-	local buff = Base64Converter.toBuffer256(str)
+function Decoder.new(buff)
 	local self = setmetatable({}, Decoder)
 
 	self._reader = BitBuffer.Reader.new(buff)
 	assert(self._reader:readFib() == 1, "version incompatible") -- version
 
 	return self
+end
+
+function Decoder.fromBuffer(buff)
+	return Decoder.new(buff)
+end
+
+function Decoder.fromString64(str)
+	return Decoder.new(Base64Converter.toBuffer256(str))
 end
 
 function Decoder:decode()
