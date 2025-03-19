@@ -1,0 +1,115 @@
+We encode two huffman trees:
+	The second huffman tree encodes common values we will encounter while encoding our data. This is the Value Huffman Tree.
+	Before we encode the Value Huffman Tree, we encode a Type Huffman Tree, common types we will encounter while encoding our Value Huffman Tree.
+
+For this example, we will encode the following table:
+
+	A = {}
+	A.one = 1
+	A.two = 2
+	A.self = A
+
+	A.list = {}
+	A.list[1] = "one"
+	A.list[2] = "two"
+	A.list[3] = "three"
+
+
+
+
+encoding type huffman tree:
+
+	0 0 0 1 (branch branch branch leaf)
+		00011 00101110 10000110 01000110 00110110 10100110 (length 5, 'table')
+
+	1 (leaf)
+		00011 11111010 00001110 01100110 10010110 01000110 (length 5, '_pfib')
+
+	1 (leaf)
+		00011 11111010 00101110 10011110 00001110 10100110 (length 5, '_type')
+
+	1 (leaf)
+		000011 11111010 01000110 11001110 00101110 01001110 10010110 01110110 11100110 (length 8, '_bstring')
+
+	Final Type Tree:
+		000 table
+		001 _pfib
+		01  _type
+		1   _bstring
+
+
+encoding value huffman tree:
+
+	0 0 0 1 (branch branch branch leaf)
+		01  ('_type' type-code)
+		001 ('_pfib' type-code)
+
+	1 (leaf)
+		1   ('_bstring' type-code)
+		0011 00101110 11101110 11110110 (length 3, 'two')
+
+	0 1 (branch leaf)
+		000 ('table' type-code)
+
+	1 (leaf)
+		01  ('_type' type-code)
+		000 ('table' type-code)
+
+	0 1 (branch leaf)
+		01  ('_type' type-code)
+		1   ('_bstring' type-code)
+
+	1 (leaf)
+		1   ('_bstring' type-code)
+		0011 11110110 01110110 10100110 (length 3, 'one')
+
+	Final Value Tree:
+		11   "one"
+		001  "two"
+		010  table A
+		10   _bstring literal code
+		000  _pfib literal code
+		011  table literal code
+
+
+encoding data:
+
+	010 (reference table A)
+		11 (list count 0)
+		00011 (hash count 4)
+
+		key value:
+			11 (reference "one")
+
+			000 (literal _pfib)
+			11 (number 1)
+
+		key value:
+			001 (reference "two")
+
+			000 (literal _pfib)
+			011 (number 2)
+
+		key value:
+			10 (literal _bstring)
+			1011 11001110 10100110 00110110 01100110 (length 4, 'self')
+
+			010 (reference table A)
+
+		key value:
+			10 (literal _bstring)
+			1011 00110110 10010110 11001110 00101110 (length 4, 'list')
+
+			011 (literal table)
+				1011 (list count 3)
+				11 (hash count 0)
+
+				index 1:
+					11 (reference "one")
+
+				index 2:
+					001 (reference "two")
+
+				index 3:
+					10 (literal _bstring)
+					00011 00101110 00010110 01001110 10100110 10100110 (length 5, 'three')
