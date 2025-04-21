@@ -63,10 +63,6 @@ function Reader:__tostring()
 	return "BitReader(" .. self._head .. "/" .. self._totalLen .. "): " .. self._origin
 end
 
-function Reader:getHead()
-	return self._head
-end
-
 
 
 
