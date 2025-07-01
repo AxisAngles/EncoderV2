@@ -63,10 +63,6 @@ function Reader:__tostring()
 	return "BitReader(" .. self._head .. "/" .. self._totalLen .. "): " .. self._origin
 end
 
-function Reader:getHead()
-	return self._head
-end
-
 
 
 
@@ -352,8 +348,8 @@ for i = 1, 32 do
 	fibSeq[i] = a0
 end
 
-Reader.maxFib = a1 - 1 -- ehh why not
-Writer.maxFib = a1 - 1
+Reader.maxFib = a0 - 1 -- ehh why not
+Writer.maxFib = a0 - 1
 
 function Writer:writeFib(n)
 	local c
