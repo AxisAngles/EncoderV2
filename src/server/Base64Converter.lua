@@ -1,3 +1,4 @@
+-- test
 local Base64Converter = {}
 
 local digits = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ+-"
