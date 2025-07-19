@@ -1,5 +1,3 @@
--- additional test
-
 --[[
 	some basic encode/decode ability is built in to the encoder/decoder that gets passed in
 
